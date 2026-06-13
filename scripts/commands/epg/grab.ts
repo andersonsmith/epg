@@ -57,10 +57,13 @@ program
       .env('DAYS')
   )
   .addOption(
-    new Option('--maxConnections <number>', 'Limit on the number of concurrent requests')
-      .argParser(parseNumber)
-      .env('MAX_CONNECTIONS')
-  )
+     new Option('--offset <days>', 'Offset the start date by N days (negative = past, positive = future)').argParser(parseNumber).env('OFFSET')
+   )
+   .addOption(
+     new Option('--maxConnections <number>', 'Limit on the number of concurrent requests')
+       .argParser(parseNumber)
+       .env('MAX_CONNECTIONS')
+   )
   .addOption(
     new Option('--gzip [path]', 'Create a compressed version of the guide as well')
       .argParser(parseBooleanOrString)
@@ -90,6 +93,7 @@ interface GrabOptions {
   delay?: number
   lang?: string
   days?: number
+  offset?: number
   proxy?: string
 }
 
@@ -124,6 +128,7 @@ async function main() {
 
   if (typeof options.output === 'string') globalConfig.output = options.output
   if (typeof options.days === 'number') globalConfig.days = options.days
+  if (typeof options.offset === 'number') globalConfig.offset = options.offset
   if (typeof options.delay === 'number') globalConfig.delay = options.delay
   if (typeof options.maxConnections === 'number')
     globalConfig.maxConnections = options.maxConnections
@@ -230,8 +235,8 @@ async function main() {
     if (!channel.xmltv_id) channel.xmltv_id = channel.site_id
 
     const days = globalConfig.days || config.days
-    const currDate = dayjs.utc(process.env.CURR_DATE || new Date().toISOString())
-    const dates = Array.from({ length: days }, (_, day) => currDate.add(day, 'd'))
+     const currDate = dayjs.utc(process.env.CURR_DATE || new Date().toISOString()).add(globalConfig.offset || 0, 'd')
+     const dates = Array.from({ length: days }, (_, day) => currDate.add(day, 'd'))
 
     dates.forEach((date: Dayjs) => {
       queue.add({
